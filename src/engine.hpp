@@ -57,7 +57,7 @@ static LRESULT CALLBACK windowProc(HWND h, UINT m, WPARAM w, LPARAM l)
         running = false;
         return 0;
     }
-    if (m == WM_NCHITTEST)
+    if (m == WM_NCHITTEST && (GetWindowLongPtrW(h, GWL_EXSTYLE) & WS_EX_TRANSPARENT))
         return HTTRANSPARENT;
     return DefWindowProcW(h, m, w, l);
 }
@@ -75,6 +75,9 @@ class Engine
     Image grid, signatureTarget;
     Ptr<ID3D11Texture2D> readback;
     Ptr<ID3D11Texture2D> edgeReadback;
+    Ptr<ID3D11Texture2D> deviceUpload;
+    Image packedNV12, decodedRGB;
+    Ptr<ID3D11PixelShader> decodeYuv;
     int edgeWidth = 0;
     std::array<unsigned char, SW * SH * 3> last{};
     int width = 0, height = 0, ow = 0, oh = 0, latest = 0;
@@ -270,6 +273,37 @@ class Engine
             present(false);
             pending = false;
         }
+    }
+    void acceptNV12(const unsigned char *pixels, int w, int h, Point now)
+    {
+        if (!decodeYuv)
+        {
+            auto s = shader("decodeNV12", "ps_5_0");
+            check_hresult(dev->CreatePixelShader(s->GetBufferPointer(), s->GetBufferSize(), nullptr, decodeYuv.put()));
+        }
+        if (!packedNV12.tex || w != width || h != height)
+        {
+            packedNV12 = texture(w, h + h / 2, DXGI_FORMAT_R8_UNORM);
+            decodedRGB = texture(w, h, DXGI_FORMAT_B8G8R8A8_UNORM);
+        }
+        ctx->UpdateSubresource(packedNV12.tex.get(), 0, nullptr, pixels, w, 0);
+        draw(decodedRGB.rtv.get(), w, h, decodeYuv.get(), packedNV12.srv.get(), nullptr);
+        accept(decodedRGB.tex.get(), w, h, now);
+    }
+    void acceptPixels(const unsigned char *pixels, int w, int h, Point now)
+    {
+        if (!deviceUpload || w != width || h != height)
+        {
+            D3D11_TEXTURE2D_DESC desc{};
+            desc.Width = w;
+            desc.Height = h;
+            desc.MipLevels = desc.ArraySize = desc.SampleDesc.Count = 1;
+            desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+            deviceUpload = nullptr;
+            check_hresult(dev->CreateTexture2D(&desc, nullptr, deviceUpload.put()));
+        }
+        ctx->UpdateSubresource(deviceUpload.get(), 0, nullptr, pixels, w * 4, 0);
+        accept(deviceUpload.get(), w, h, now);
     }
     void accept(ID3D11Texture2D *src, int w, int h, Point now, int left = 0, int top = 0)
     {

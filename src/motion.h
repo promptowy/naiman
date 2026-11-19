@@ -13,6 +13,19 @@ V vs(uint id : SV_VertexID) {
     return o;
 }
 float y(float3 c) { return dot(c, float3(.299,.587,.114)); }
+float4 decodeNV12(V i) : SV_Target {
+    uint w, packedHeight;
+    oldFrame.GetDimensions(w, packedHeight);
+    uint h = packedHeight * 2 / 3;
+    int2 pos = int2(i.p.xy);
+    int2 uv = int2(pos.x & ~1, h + pos.y / 2);
+    float l = (oldFrame.Load(int3(pos, 0)).r * 255 - 16) / 219;
+    float u = (oldFrame.Load(int3(uv, 0)).r * 255 - 128) / 224;
+    float v = (oldFrame.Load(int3(uv + int2(1,0), 0)).r * 255 - 128) / 224;
+    float3 rgb = h > 576 ? float3(l + 1.5748*v,l - .187324*u - .468124*v,l + 1.8556*u)
+                         : float3(l + 1.402*v,l - .344136*u - .714136*v,l + 1.772*u);
+    return float4(saturate(rgb),1);
+}
 float err(float2 uv, float2 delta, float level) {
     float2 d = delta * pixel * .5;
     float2 stepUV = pixel * exp2(level) * 3;

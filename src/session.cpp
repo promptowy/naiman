@@ -1,4 +1,8 @@
 #include "engine.hpp"
+#include "capture_device.hpp"
+#pragma comment(lib, "strmiids.lib")
+#pragma comment(lib, "ole32.lib")
+#pragma comment(lib, "oleaut32.lib")
 #include <shellapi.h>
 #include <mmsystem.h>
 #include <iomanip>
@@ -10,7 +14,7 @@ struct Options
     DWORD pid = 0, parent = 0;
     int seconds = 0;
     bool original = false, windowed = false, console = false;
-    std::wstring log, stop;
+    std::wstring log, stop, video, audio;
 };
 Options options()
 {
@@ -38,7 +42,11 @@ Options options()
         if (i + 1 >= n)
             throw hresult_invalid_argument();
         auto val = v[++i];
-        if (k == L"--window")
+        if (k == L"--video")
+            o.video = val;
+        else if (k == L"--audio")
+            o.audio = val;
+        else if (k == L"--window")
             o.source = (HWND)(uintptr_t)std::stoull(val);
         else if (k == L"--pid")
             o.pid = std::stoul(val);
@@ -117,7 +125,8 @@ void run(const Options &o, std::ofstream &log)
     GetWindowThreadProcessId(o.source, &pid);
     if (!o.source || !pid || pid != o.pid || !IsWindowVisible(o.source) || IsIconic(o.source))
         throw hresult_error(E_INVALIDARG, L"Restore the source window and select it again.");
-    if (!GraphicsCaptureSession::IsSupported())
+    const bool direct = !o.video.empty();
+    if (!direct && !GraphicsCaptureSession::IsSupported())
         throw hresult_error(E_FAIL, L"Windows Graphics Capture is unavailable.");
     winrt::handle parent;
     if (o.parent)
@@ -126,9 +135,12 @@ void run(const Options &o, std::ofstream &log)
         if (!parent)
             throw hresult_error(E_FAIL, L"The launcher has closed.");
     }
-    auto interop = get_activation_factory<GraphicsCaptureItem, IGraphicsCaptureItemInterop>();
     GraphicsCaptureItem item{nullptr};
-    check_hresult(interop->CreateForWindow(o.source, guid_of<GraphicsCaptureItem>(), put_abi(item)));
+    if (!direct)
+    {
+        auto interop = get_activation_factory<GraphicsCaptureItem, IGraphicsCaptureItemInterop>();
+        check_hresult(interop->CreateForWindow(o.source, guid_of<GraphicsCaptureItem>(), put_abi(item)));
+    }
     MONITORINFOEXW mon{};
     mon.cbSize = sizeof(mon);
     if (!GetMonitorInfoW(MonitorFromWindow(o.source, MONITOR_DEFAULTTONEAREST), &mon))
@@ -151,11 +163,11 @@ void run(const Options &o, std::ofstream &log)
     wc.lpszClassName = appClass;
     RegisterClassW(&wc);
     HWND out =
-        CreateWindowExW(WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_TOPMOST | WS_EX_TRANSPARENT | WS_EX_LAYERED,
+        CreateWindowExW(direct ? WS_EX_APPWINDOW : WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_TOPMOST | WS_EX_TRANSPARENT | WS_EX_LAYERED,
                         appClass, L"NAIMAN - output", WS_POPUP, x, y, w, h, nullptr, nullptr, wc.hInstance, nullptr);
     if (!out)
         throw_last_error();
-    if (!SetLayeredWindowAttributes(out, 0, 255, LWA_ALPHA))
+    if (!direct && !SetLayeredWindowAttributes(out, 0, 255, LWA_ALPHA))
         throw_last_error();
     if (!RegisterHotKey(out, 1, MOD_CONTROL | MOD_ALT | MOD_NOREPEAT, 'Q'))
         throw hresult_error(E_FAIL, L"Ctrl+Alt+Q is in use. Close the other session or release the shortcut.");
@@ -163,31 +175,27 @@ void run(const Options &o, std::ofstream &log)
         throw hresult_error(E_FAIL, L"Ctrl+Alt+B is in use. Release the shortcut and try again.");
     Engine engine(out, w, h, haveFrequency ? displayMode.dmDisplayFrequency : 60);
     smooth = !o.original;
-    auto size = item.Size();
-    auto pool = Direct3D11CaptureFramePool::CreateFreeThreaded(engine.winDevice,
-                                                               DirectXPixelFormat::B8G8R8A8UIntNormalized, 2, size);
-    auto session = pool.CreateCaptureSession(item);
-    try
+    winrt::Windows::Graphics::SizeInt32 size{};
+    Direct3D11CaptureFramePool pool{nullptr};
+    GraphicsCaptureSession session{nullptr};
+    std::optional<CaptureDevice> device;
+    if (direct)
+        device.emplace(o.video, o.audio, w, h);
+    else
     {
-        session.IsCursorCaptureEnabled(false);
+        size = item.Size();
+        pool = Direct3D11CaptureFramePool::CreateFreeThreaded(engine.winDevice, DirectXPixelFormat::B8G8R8A8UIntNormalized, 2, size);
+        session = pool.CreateCaptureSession(item);
+        try { session.IsCursorCaptureEnabled(false); } catch (hresult_error const &) {}
+        try { session.MinUpdateInterval(std::chrono::milliseconds(8)); } catch (hresult_error const &) {}
+        session.StartCapture();
     }
-    catch (hresult_error const &)
-    {
-    }
-    try
-    {
-        session.MinUpdateInterval(std::chrono::milliseconds(8));
-    }
-    catch (hresult_error const &)
-    {
-    }
-    session.StartCapture();
     auto start = Clock::now(), lastReport = start, lastFrame = start;
     bool shown = false, hasFrame = false;
     RECT region{}, lastBase{}, candidate{};
     unsigned confirmations = 0;
     Point checkBounds{}, nextEdgeProbe{};
-    if (!o.windowed)
+    if (!o.windowed && !direct)
         SetForegroundWindow(o.source);
     log << "started\n" << std::flush;
     while (running)
@@ -201,13 +209,13 @@ void run(const Options &o, std::ofstream &log)
         if (!running)
             break;
         auto now = Clock::now();
-        const bool sourceActive = GetForegroundWindow() == o.source;
+        const bool sourceActive = direct || GetForegroundWindow() == o.source;
         const bool shouldShow = hasFrame && (o.windowed || sourceActive);
         if (shouldShow != shown)
         {
             // Returning to another application must uncover it. Returning to the
             // game restores the overlay without taking keyboard/controller focus.
-            ShowWindow(out, shouldShow ? SW_SHOWNOACTIVATE : SW_HIDE);
+            ShowWindow(out, shouldShow ? (direct && !o.windowed ? SW_SHOW : SW_SHOWNOACTIVATE) : SW_HIDE);
             shown = shouldShow;
         }
         if (now - lastReport >= std::chrono::seconds(1))
@@ -220,7 +228,7 @@ void run(const Options &o, std::ofstream &log)
             lastReport = now;
             DWORD current = 0;
             GetWindowThreadProcessId(o.source, &current);
-            if (current != pid || IsIconic(o.source) || !IsWindowVisible(o.source))
+            if (current != pid || (!direct && (IsIconic(o.source) || !IsWindowVisible(o.source))))
                 break;
             if (parent && WaitForSingleObject(parent.get(), 0) == WAIT_OBJECT_0)
                 break;
@@ -230,6 +238,21 @@ void run(const Options &o, std::ofstream &log)
         if (o.seconds && now - start >= std::chrono::seconds(o.seconds))
             break;
         engine.tick();
+        if (direct)
+        {
+            auto received = engine.stats.received;
+            device->poll(engine, now);
+            if (engine.stats.received != received)
+            {
+                hasFrame = true;
+                lastFrame = now;
+            }
+            else if (now - lastFrame > std::chrono::seconds(8))
+                throw hresult_error(E_FAIL, L"No video from the device. Check the HDMI signal and close other capture apps.");
+            else
+                MsgWaitForMultipleObjectsEx(0, nullptr, 2, QS_ALLINPUT, MWMO_INPUTAVAILABLE);
+            continue;
+        }
         auto frame = pool.TryGetNextFrame();
         if (frame)
         {
@@ -288,8 +311,8 @@ void run(const Options &o, std::ofstream &log)
             MsgWaitForMultipleObjectsEx(0, nullptr, 2, QS_ALLINPUT, MWMO_INPUTAVAILABLE);
         }
     }
-    session.Close();
-    pool.Close();
+    if (session) session.Close();
+    if (pool) pool.Close();
     DestroyWindow(out);
     const auto &s = engine.stats;
     log << "end " << s.received << " " << s.real << " " << s.generated << " " << s.repeats << " " << s.cuts << "\n";

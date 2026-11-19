@@ -7,12 +7,14 @@ A portable Windows player for smoothing a console stream on your PC. One executa
 ## Use
 
 1. Run NAIMAN.exe on Windows 11 x64 with an SDR monitor and a Direct3D 11 feature level 11.0 GPU.
-2. Choose Xbox or PlayStation 5. Follow the instructions on the console, open the stream on your PC, and confirm the game window. If the stream is already running, use the shortcut on the first step. For an HDMI card, choose the OBS projector route. Console mode uses a centered 16:9 viewport from the client area. Press F11 in Edge to remove any visible browser chrome.
+2. Choose Xbox or PlayStation 5. Follow the instructions on the console, open the stream on your PC, and confirm the game window. If the stream is already running, use "Go straight to the game window" on the first screen: you get the open windows with a live preview. For an HDMI card, pick the card directly or fall back to an OBS projector. Console mode uses a centered 16:9 viewport from the client area. Press F11 in Edge to remove any visible browser chrome.
 3. Use Ctrl + Alt + B to compare original and smoothed playback. Ctrl + Alt + Q exits playback. In the launcher you can also try the 30 Hz motion test without a console.
 
 The preview uses Windows Graphics Capture and Direct3D 11. It detects repeated frames, estimates motion with a coarse-to-fine GPU block search, draws an intermediate frame, and fits the result to the source monitor. Protected content, HDR presentation, direct HDMI device access and native console pairing are outside this preview. Interpolation can add delay and create artifacts. Physical PS5 and capture card validation is pending.
 
-Hardware photography in the application and guide is credited at [Photo credits](https://promptowy.github.io/naiman/credits.html). Regenerate the static landing pages with `python site/build.py`.
+The interface is drawn by the app itself: a cut wordmark, Archivo for headlines and IBM Plex Sans for text, both under the SIL Open Font License and renamed as the licences require ([Credits](https://promptowy.github.io/naiman/credits.html)). `python site/fonts.py ARCHIVO.ttf PLEXSANS.ttf` cuts the font files for the app and the pages.
+
+Regenerate the pages with `python site/build.py` (add `--preview` for a review copy that links the local build). Pictures of the app on the pages come from the app: `dist\NAIMAN.exe --shots docs\media\app 1.5` renders every screen to PNG without opening a window. `python site/ocena.py` collects a review package with before and after pictures.
 
 ## Local files
 
@@ -35,5 +37,7 @@ $p = Start-Process .\dist\NAIMAN.exe -ArgumentList @('--check', ('"' + $log + '"
 $p.ExitCode
 Get-Content $log
 ```
+
+`pwsh tests\przejscie.ps1` walks the real window through both console paths in English and Polish, the HDMI route, the open-game shortcut, the motion test, start, stop and a lost source.
 
 The smoke test requires a visible desktop and a hardware GPU. Build artifacts are generated locally with build.ps1. Download and run the official preview release or build from the source in this repository.

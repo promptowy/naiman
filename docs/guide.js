@@ -1,33 +1,30 @@
+// Shows one console path at a time. Without this script all three paths stay visible, one after another.
 (() => {
-  const routes = [...document.querySelectorAll('[data-path]')];
-  if (!routes.length) return;
+  const paths = [...document.querySelectorAll('[data-path]')];
+  if (!paths.length) return;
   const links = [...document.querySelectorAll('[data-route]')];
-  function select(key, scroll) {
-    if (!routes.some(route => route.id === key)) key = 'xbox';
-    routes.forEach(route => { route.hidden = route.id !== key; });
+  const keys = paths.map(path => path.id);
+  let remembered = null;
+  try { remembered = localStorage.getItem('naiman-route'); } catch (e) { /* private mode */ }
+
+  function show(key, scroll) {
+    if (!keys.includes(key)) key = keys.includes(remembered) ? remembered : keys[0];
+    paths.forEach(path => { path.hidden = path.id !== key; path.toggleAttribute('data-on', path.id === key); });
     links.forEach(link => link.setAttribute('aria-current', String(link.dataset.route === key)));
-    if (scroll) document.getElementById('setup').scrollIntoView({block:'start'});
+    try { localStorage.setItem('naiman-route', key); } catch (e) { /* private mode */ }
+    remembered = key;
+    if (scroll) document.getElementById('kroki').scrollIntoView({ block: 'start' });
   }
-  function fromHash() { const key = location.hash.slice(1); if (key==='xbox'||key==='ps5') select(key,true); }
-  links.forEach(link => link.addEventListener('click',e => {
-    if(e.ctrlKey||e.metaKey||e.shiftKey||e.altKey)return;
-    e.preventDefault();
-    const key=link.dataset.route;
-    if(location.hash!=='#'+key)history.pushState(null,'','#'+key);
-    select(key,true);
+  links.forEach(link => link.addEventListener('click', event => {
+    if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    const key = link.dataset.route;
+    if (location.hash !== '#' + key) history.pushState(null, '', '#' + key);
+    show(key, !link.closest('.tabs') || window.scrollY < document.getElementById('kroki').offsetTop - 200);
   }));
-  routes.forEach(route => {
-    const steps=[...route.querySelectorAll('details')];
-    steps.forEach((item,i) => {
-      const button=item.querySelector('[data-next]');
-      if(button)button.addEventListener('click',()=>{
-        steps.forEach((s,n)=>{s.open=n===i+1;});
-        const next=steps[i+1].querySelector('summary');next.focus();next.scrollIntoView({block:'nearest'});
-      });
-    });
-  });
-  window.addEventListener('popstate',()=>select(location.hash.slice(1),true));
-  window.addEventListener('hashchange',fromHash);
-  select(location.hash.slice(1),false);
-  if(location.hash==='#xbox'||location.hash==='#ps5')requestAnimationFrame(fromHash);
+  const fromHash = scroll => show(location.hash.slice(1), scroll && keys.includes(location.hash.slice(1)));
+  window.addEventListener('popstate', () => fromHash(true));
+  window.addEventListener('hashchange', () => fromHash(true));
+  fromHash(false);
+  if (keys.includes(location.hash.slice(1))) requestAnimationFrame(() => fromHash(true));
 })();
