@@ -1,0 +1,8 @@
+/dist/
+/build/
+.vs/
+*.obj
+*.pdb
+/DZIENNIK-AGENTOW.md
+/AGENTS.md
+/STATUS.md
