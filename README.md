@@ -1,16 +1,18 @@
 # NAIMAN
 
-A portable Windows player for smoothing a console stream on your PC. One executable, English and Polish controls, and a built-in motion test. The source app keeps controller input and audio.
+A portable Windows player for smoothing a console stream on your PC. One executable, separate Xbox and PS5 setup walkthroughs in English and Polish, and a built-in motion test. The source app keeps controller input and audio.
 
-[Download the Windows preview](https://github.com/promptowy/naiman/releases/download/v0.1.0-preview.1/NAIMAN.exe) · [English guide](https://promptowy.github.io/naiman/) · [Polski poradnik](https://promptowy.github.io/naiman/pl.html) · [Test results](docs/testing.md)
+[Download the Windows preview](https://github.com/promptowy/naiman/releases/download/v0.2.0-preview.1/NAIMAN.exe) · [English guide](https://promptowy.github.io/naiman/) · [Polski poradnik](https://promptowy.github.io/naiman/pl.html) · [Test results](docs/testing.md)
 
 ## Use
 
 1. Run NAIMAN.exe on Windows 11 x64 with an SDR monitor and a Direct3D 11 feature level 11.0 GPU.
-2. Open an Xbox browser stream, a Remote Play window, or an OBS windowed projector for your capture card. Restore the source window. Select it in NAIMAN and start smoothing.
+2. Choose Xbox or PlayStation 5. Follow the instructions on the console, open the stream on your PC, and confirm the game window. If the stream is already running, use the shortcut on the first step. For an HDMI card, choose the OBS projector route. Console mode uses a centered 16:9 viewport from the client area. Press F11 in Edge to remove any visible browser chrome.
 3. Use Ctrl + Alt + B to compare original and smoothed playback. Ctrl + Alt + Q exits playback. In the launcher you can also try the 30 Hz motion test without a console.
 
 The preview uses Windows Graphics Capture and Direct3D 11. It detects repeated frames, estimates motion with a coarse-to-fine GPU block search, draws an intermediate frame, and fits the result to the source monitor. Protected content, HDR presentation, direct HDMI device access and native console pairing are outside this preview. Interpolation can add delay and create artifacts. Physical PS5 and capture card validation is pending.
+
+Hardware photography in the application and guide is credited at [Photo credits](https://promptowy.github.io/naiman/credits.html). Regenerate the static landing pages with `python site/build.py`.
 
 ## Local files
 

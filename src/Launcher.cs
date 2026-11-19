@@ -80,7 +80,9 @@ static class WindowList
                 using (var p = Process.GetProcessById(pid))
                 {
                     string proc = p.ProcessName.ToLowerInvariant(), title = t.ToString(),
-                           key = title.ToLowerInvariant();
+                           key = System.Text.RegularExpressions.Regex
+                                     .Replace(title.ToLowerInvariant().Replace("\u200B", ""), @"\s+", " ")
+                                     .Trim();
                     bool browser = new[] { "msedge", "chrome", "firefox", "brave", "vivaldi" }.Contains(proc);
                     bool xbox = browser && (key.Contains("play xbox") || key.Contains("xbox remote play") ||
                                             key.Contains("xbox cloud gaming") || key.Contains("xbox.com/play") ||
@@ -113,7 +115,7 @@ static class WindowList
         return items;
     }
 }
-class Launcher : Form
+partial class Launcher : Form
 {
     readonly bool checking;
     readonly string checkPath;
@@ -287,6 +289,7 @@ class Launcher : Form
         {
             SavePrefs();
         };
+        InitWizard();
     }
     Label LabelAt(int x, int y, int w, int h, float size, bool bold)
     {
@@ -358,6 +361,8 @@ class Launcher : Form
                          "Wybierz okno, w którym widzisz grę. Najlepiej użyć pełnego ekranu bez ramek.");
         start.Text =
             engine != null ? T("Stop playback", "Zatrzymaj") : T("Play with 2x smoothing", "Graj z wygładzaniem 2x");
+        if (guideReady)
+            RenderGuide();
     }
     void Scan()
     {
@@ -405,8 +410,22 @@ class Launcher : Form
             {
             }
         }
-        string url =
-            mode.SelectedIndex == 0 ? "https://www.xbox.com/remoteplay" : "https://www.playstation.com/remote-play/";
+        if (mode.SelectedIndex == 1)
+        {
+            foreach (var root in new[] { Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+                                         Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles) })
+            {
+                var sony = Path.Combine(root, "Sony", "PS Remote Play", "RemotePlay.exe");
+                if (File.Exists(sony))
+                {
+                    Process.Start(sony);
+                    return;
+                }
+            }
+        }
+        string url = mode.SelectedIndex == 0 ? "https://www.xbox.com/remoteplay"
+                                             : "https://www.playstation.com/" + (pl ? "pl-pl" : "en-us") +
+                                                   "/support/games/playstation-remote-play-on-pc-and-mac/";
         Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
     }
     static string ExtractEngine()
@@ -484,8 +503,10 @@ class Launcher : Form
         WindowList.SetForegroundWindow(item.Handle);
         string args = "--window " + item.Handle.ToInt64() + " --pid " + item.Pid + " --parent " +
                       Process.GetCurrentProcess().Id + " --log \"" + statsPath + "\" --stop \"" + stopPath + "\"" +
-                      (checking ? " --seconds 9 --windowed" : "");
+                      (checking ? " --seconds 9 --windowed" : "") + ((route == 0 || route == 1) ? " --console" : "");
         engine = Process.Start(new ProcessStartInfo(exe, args) { UseShellExecute = false, CreateNoWindow = true });
+        if (!checking)
+            AllowSetForegroundWindow(engine.Id);
         mode.Enabled = window.Enabled = refresh.Enabled = false;
         SetText();
         status.Text = T("Starting capture...", "Uruchamiam przechwytywanie...");
@@ -582,6 +603,8 @@ class Launcher : Form
             status.Text = String.Format(T("Playback: {0:0} source + {1:0} generated frames/s",
                                           "Odtwarzanie: {0:0} źródłowych + {1:0} generowanych kl./s"),
                                         a, g);
+            if (curr.Length > 8 && curr[8] == "0")
+                status.Text=T("Activate your game window to see fullscreen playback and keep controller input.","Kliknij okno gry. NAIMAN pokaże pełny ekran, a pad będzie sterował grą.");
         }
         lastLine = line;
     }

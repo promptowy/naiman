@@ -22,6 +22,7 @@
 #include <thread>
 #include <vector>
 #include "motion.h"
+#include "console_edges.hpp"
 
 using namespace winrt;
 using namespace winrt::Windows::Graphics::Capture;
@@ -73,6 +74,8 @@ class Engine
     std::array<Image, 2> frames;
     Image grid, signatureTarget;
     Ptr<ID3D11Texture2D> readback;
+    Ptr<ID3D11Texture2D> edgeReadback;
+    int edgeWidth = 0;
     std::array<unsigned char, SW * SH * 3> last{};
     int width = 0, height = 0, ow = 0, oh = 0, latest = 0;
     bool have = false, pending = false;
@@ -216,6 +219,37 @@ class Engine
         rd.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
         check_hresult(dev->CreateTexture2D(&rd, nullptr, readback.put()));
     }
+    RECT refineConsoleRegion(ID3D11Texture2D *source, RECT base)
+    {
+        const int w = base.right - base.left, h = base.bottom - base.top;
+        if (w < 200 || h < 120)
+            return base;
+        if (w != edgeWidth)
+        {
+            D3D11_TEXTURE2D_DESC desc{};
+            desc.Width = w;
+            desc.Height = 9;
+            desc.ArraySize = desc.MipLevels = desc.SampleDesc.Count = 1;
+            desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+            desc.Usage = D3D11_USAGE_STAGING;
+            desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+            edgeReadback = nullptr;
+            check_hresult(dev->CreateTexture2D(&desc, nullptr, edgeReadback.put()));
+            edgeWidth = w;
+        }
+        for (unsigned row = 0; row < 9; ++row)
+        {
+            unsigned y = base.top + (row < 7 ? (row + 1) * h / 8 : row == 7 ? 1 : h - 2);
+            D3D11_BOX line{(UINT)base.left, y, 0, (UINT)base.right, y + 1, 1};
+            ctx->CopySubresourceRegion(edgeReadback.get(), 0, 0, row, 0, source, 0, &line);
+        }
+        D3D11_MAPPED_SUBRESOURCE map{};
+        check_hresult(ctx->Map(edgeReadback.get(), 0, D3D11_MAP_READ, 0, &map));
+        auto trim = findConsoleEdges(static_cast<const unsigned char *>(map.pData), map.RowPitch, w, h);
+        ctx->Unmap(edgeReadback.get(), 0);
+        LONG x = base.left + trim.x, y = base.top + trim.y;
+        return {x, y, x + trim.w, y + trim.h};
+    }
     void resize(int w, int h)
     {
         if (w == width && h == height)
@@ -237,12 +271,12 @@ class Engine
             pending = false;
         }
     }
-    void accept(ID3D11Texture2D *src, int w, int h, Point now)
+    void accept(ID3D11Texture2D *src, int w, int h, Point now, int left = 0, int top = 0)
     {
         stats.received++;
         resize(w, h);
         const int next = 1 - latest;
-        D3D11_BOX area{0, 0, 0, (UINT)w, (UINT)h, 1};
+        D3D11_BOX area{(UINT)left, (UINT)top, 0, (UINT)(left + w), (UINT)(top + h), 1};
         ctx->CopySubresourceRegion(frames[next].tex.get(), 0, 0, 0, 0, src, 0, &area);
         draw(signatureTarget.rtv.get(), SW, SH, signature.get(), nullptr, frames[next].srv.get());
         ctx->CopyResource(readback.get(), signatureTarget.tex.get());

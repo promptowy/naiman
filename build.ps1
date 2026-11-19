@@ -23,5 +23,5 @@ try {
 } finally {Pop-Location}
 $cs = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 if (!(Test-Path "$src\Launcher.cs")) {throw 'Missing launcher source.'}
-& $cs /nologo /optimize+ /target:winexe /platform:x64 /codepage:65001 "/out:$OutDir\NAIMAN.exe" "/resource:$OutDir\engine\NaimanCapture.exe,NaimanCapture.bin" /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.Core.dll "/win32manifest:$src\app.manifest" "$src\Launcher.cs"
+& $cs /nologo /optimize+ /target:winexe /platform:x64 /codepage:65001 "/win32icon:$src\naiman.ico" "/out:$OutDir\NAIMAN.exe" "/resource:$OutDir\engine\NaimanCapture.exe,NaimanCapture.bin" "/resource:$PSScriptRoot\docs\media\xbox.png,xbox.png" "/resource:$PSScriptRoot\docs\media\ps5.png,ps5.png" /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.Core.dll "/win32manifest:$src\app.manifest" "$src\Launcher.cs" "$src\Wizard.cs"
 if ($LASTEXITCODE) {throw 'Launcher build failed.'}
