@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="field.css">
 <script src="guide.js" defer></script>
 <script src="demo.js" defer></script>
+<script src="stats.js" defer></script>
 </head>
 <body>
 <header class="top">
@@ -24,8 +25,10 @@
 <p class="bill">W niebieskim narożniku 30 klatek. W pomarańczowym 2x.</p>
 <h1>GTA VI z konsoli na ekranie PC. Z płynniejszym ruchem.</h1>
 <p class="sub">Na konsolach gra chodzi w 30 klatkach. NAIMAN bierze obraz z PS5 albo Xboxa, dorysowuje klatkę między każdymi dwiema i daje grę na pełny ekran monitora. Jeden plik, za darmo, bez instalatora.</p>
-<div class="get"><a class="cta" href="https://github.com/promptowy/naiman/releases/download/v0.3.0-preview.1/NAIMAN.exe"><span>Pobierz na Windows 11</span><i aria-hidden="true">↓</i></a>
-<p class="meta">NAIMAN.exe · x64 · 0,6 MB · wersja 0.3.0-preview.1 · <a href="https://promptowy.com/naiman/">NAIMAN na promptowy.com</a></p>
+<div class="get"><a class="cta" href="https://github.com/promptowy/naiman/releases/download/v0.3.1-preview.1/NAIMAN.exe"><span>Pobierz na Windows 11</span><i aria-hidden="true">↓</i></a>
+<p class="meta">NAIMAN.exe · x64 · 0,6 MB · wersja 0.3.1-preview.1 · <a href="https://promptowy.com/naiman/">NAIMAN na promptowy.com</a></p>
+<p id="usage-stats"><strong data-stat="views">…</strong> odsłon od 20.11.2026 · <strong data-stat="downloads">…</strong> pobrań EXE ze wszystkich wydań</p>
+<p>Nowość w 0.3.1: podczas gry Ctrl+Alt+F pokazuje ściągę kamery FPP. Przy HDMI pad zostaje przy konsoli.</p>
 <p class="phone">Czytasz na telefonie? Kroki dla konsoli masz zaraz niżej. Plik pobierzesz później, na komputerze.</p></div>
 </div>
 <div class="stagefront"><svg class="sun" viewBox="0 0 400 200" aria-hidden="true"><defs><linearGradient id="dusk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffb627"/><stop offset=".55" stop-color="#ff5a1f"/><stop offset="1" stop-color="#ff2d78"/></linearGradient><clipPath id="half"><rect width="400" height="200"/></clipPath></defs><circle cx="200" cy="200" r="200" fill="url(#dusk)" clip-path="url(#half)"/><g class="cut"><rect x="0" y="73.1" width="400" height="2.7"/><rect x="0" y="97.3" width="400" height="4.7"/><rect x="0" y="119.3" width="400" height="6.7"/><rect x="0" y="138.9" width="400" height="8.7"/><rect x="0" y="155.9" width="400" height="10.7"/><rect x="0" y="169.8" width="400" height="12.7"/><rect x="0" y="179.8" width="400" height="14.7"/></g></svg><figure class="shot"><div class="bar">NAIMAN</div><img src="media/app/01-start-pl.png" width="1560" height="960" alt="Pierwszy ekran NAIMAN: PlayStation 5, Xbox albo karta HDMI"></figure></div>
@@ -109,10 +112,10 @@
 </section>
 <section class="block last">
 <h2>Jeden plik. Uruchom i wchodź do ringu.</h2>
-<a class="cta" href="https://github.com/promptowy/naiman/releases/download/v0.3.0-preview.1/NAIMAN.exe"><span>Pobierz na Windows 11</span><i aria-hidden="true">↓</i></a>
-<p class="meta"><span class="sum"><b>SHA-256</b> <code>03de72453d43882c86d28bdfdc124f658f71426020027f7e139bb8d09796ce43</code></span></p>
+<a class="cta" href="https://github.com/promptowy/naiman/releases/download/v0.3.1-preview.1/NAIMAN.exe"><span>Pobierz na Windows 11</span><i aria-hidden="true">↓</i></a>
+<p class="meta"><span class="sum"><b>SHA-256</b> <code>f3fee029c65db194848185ff58bb6f0e6fc9c82c1efc6935ef1cf192d6859312</code></span></p>
 </section>
 </main>
-<footer class="foot"><svg class="mark" viewBox="0 0 532 100" role="img" aria-label="NAIMAN"><polygon transform="translate(0)" points="0,100 0,0 27,0 58,57 58,0 84,0 84,100 57,100 26,43 26,100"/><polygon transform="translate(89)" points="0,100 33,0 61,0 94,100 66,100 47,38 28,100"/><polygon transform="translate(192)" points="26,6 26,100 0,100 0,32"/><polygon class="pad" transform="translate(192)" points="0,0 21,0 0,21"/><polygon transform="translate(232)" points="0,100 0,0 28,0 55,52 82,0 110,0 110,100 84,100 84,44 65,82 45,82 26,44 26,100"/><polygon transform="translate(347)" points="0,100 33,0 61,0 94,100 66,100 47,38 28,100"/><polygon transform="translate(446)" points="0,100 0,0 27,0 58,57 58,0 84,0 84,100 57,100 26,43 26,100"/></svg><a href="https://promptowy.com/naiman/">NAIMAN na promptowy.com</a><a href="https://github.com/promptowy/naiman/releases/tag/v0.3.0-preview.1">Wydania</a><a href="testing.html">Pomiary</a><a href="credits.html">Licencje</a><a href="https://github.com/promptowy/naiman">GitHub</a></footer>
+<footer class="foot"><svg class="mark" viewBox="0 0 532 100" role="img" aria-label="NAIMAN"><polygon transform="translate(0)" points="0,100 0,0 27,0 58,57 58,0 84,0 84,100 57,100 26,43 26,100"/><polygon transform="translate(89)" points="0,100 33,0 61,0 94,100 66,100 47,38 28,100"/><polygon transform="translate(192)" points="26,6 26,100 0,100 0,32"/><polygon class="pad" transform="translate(192)" points="0,0 21,0 0,21"/><polygon transform="translate(232)" points="0,100 0,0 28,0 55,52 82,0 110,0 110,100 84,100 84,44 65,82 45,82 26,44 26,100"/><polygon transform="translate(347)" points="0,100 33,0 61,0 94,100 66,100 47,38 28,100"/><polygon transform="translate(446)" points="0,100 0,0 27,0 58,57 58,0 84,0 84,100 57,100 26,43 26,100"/></svg><a href="https://promptowy.com/naiman/">NAIMAN na promptowy.com</a><a href="https://github.com/promptowy/naiman/releases/tag/v0.3.1-preview.1">Wydania</a><a href="testing.html">Pomiary</a><a href="credits.html">Licencje</a><a href="https://github.com/promptowy/naiman">GitHub</a></footer>
 </body>
 </html>

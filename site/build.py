@@ -13,7 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
 REPO = "https://github.com/promptowy/naiman"
-RELEASE = "v0.3.0-preview.1"  # bump together with the published executable
+RELEASE = "v0.3.1-preview.1"  # bump together with the published executable
 HOME = "https://promptowy.com"  # the main copy of these pages lives there; GitHub Pages points to it
 PREVIEW = "--preview" in sys.argv
 EXE = ROOT / "dist" / "next" / "NAIMAN.exe"
@@ -202,6 +202,7 @@ def page(pl):
 <link rel="stylesheet" href="field.css">
 <script src="guide.js" defer></script>
 <script src="demo.js" defer></script>
+<script src="stats.js" defer></script>
 </head>
 <body>
 <header class="top">
@@ -217,6 +218,8 @@ def page(pl):
 <p class="sub">{copy}</p>
 <div class="get"><a class="cta" href="{download}"{" download" if PREVIEW else ""}><span>{get}</span><i aria-hidden="true">↓</i></a>
 <p class="meta">NAIMAN.exe · x64 · {megabytes} MB · {t("version", "wersja")} {"0.3 " + t("for review", "do oceny") if PREVIEW else RELEASE[1:]}{"" if PREVIEW else " · " + mainlink}</p>
+<p id="usage-stats"><strong data-stat="views">…</strong> {t("page views since 20 Nov 2026", "odsłon od 20.11.2026")} · <strong data-stat="downloads">…</strong> {t("EXE downloads across all releases", "pobrań EXE ze wszystkich wydań")}</p>
+<p>{t("New in 0.3.1: open the GTA 6 camera guide during play with Ctrl+Alt+F. With HDMI, the controller stays on the console.", "Nowość w 0.3.1: podczas gry Ctrl+Alt+F pokazuje ściągę kamery FPP. Przy HDMI pad zostaje przy konsoli.")}</p>
 <p class="phone">{t("On your phone? The steps for your console are right below. Get the file later, on the PC.", "Czytasz na telefonie? Kroki dla konsoli masz zaraz niżej. Plik pobierzesz później, na komputerze.")}</p></div>
 </div>
 <div class="stagefront">{sun()}{shot("01-start", t("The first NAIMAN screen: PlayStation 5, Xbox or HDMI capture card", "Pierwszy ekran NAIMAN: PlayStation 5, Xbox albo karta HDMI"), True)}</div>
