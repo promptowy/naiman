@@ -135,7 +135,7 @@ static class WindowList
 }
 partial class Launcher : Form
 {
-    public const string Version = "0.3";
+    public const string Version = "0.3.1";
     const int BaseW = 1040, BaseH = 640;
     readonly bool checking;
     readonly string checkPath;
@@ -234,6 +234,7 @@ partial class Launcher : Form
         };
         FormClosing += delegate
         {
+            EndCameraHelp();
             Stop();
             DropThumb();
             if (demo != null && !demo.HasExited)
@@ -434,6 +435,8 @@ partial class Launcher : Form
             AllowSetForegroundWindow(engine.Id);
         lastItem = item;
         lastDirect = direct;
+        if (!checking && route != 4)
+            cameraKeyRegistered = RegisterHotKey(Handle, CameraKey, 0x4003, (uint)Keys.F);
         sessionStart = DateTime.UtcNow;
         fpsSource = fpsGenerated = 0;
         totalSource = totalGenerated = 0;
@@ -526,6 +529,7 @@ partial class Launcher : Form
         }
         if (engine.HasExited)
         {
+            EndCameraHelp();
             int code = engine.ExitCode;
             engine.Dispose();
             engine = null;
@@ -575,6 +579,8 @@ partial class Launcher : Form
             {
                 phase = now;
                 Compose();
+                if (phase == 2 && cameraGuide != null && !cameraGuide.IsDisposed)
+                    cameraGuide.RaiseWithoutFocus();
             }
             else
                 Invalidate();

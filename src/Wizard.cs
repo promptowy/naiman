@@ -35,7 +35,7 @@ partial class Launcher
         public bool Visible, ClientOnly;
     }
     Btn langPl, langEn, pickXbox, pickPs, pickHdmi, shortcut, demoLink, back, skip, next, open, refresh, alt, start,
-        audio, help, toGame, stop, again, other;
+        audio, help, cameraHelp, toGame, stop, again, other;
     Rows list;
     Graphics G;
     bool painting;
@@ -109,6 +109,7 @@ partial class Launcher
         audio = Make(Btn.Outline, delegate { AudioMenu(); });
         audio.Sub = "↓";
         help = Make(Btn.Link, delegate { HelpPage(); });
+        cameraHelp = Make(Btn.Link, delegate { ToggleCameraGuide(); });
         toGame = Make(Btn.Primary, delegate
         {
             if (lastItem != null)
@@ -179,6 +180,7 @@ partial class Launcher
     {
         if (pl == polish)
             return;
+        CloseCameraGuide();
         pl = polish;
         SavePrefs();
         list.SetItems(new List<Rows.Item>(), SameWindow);
@@ -206,6 +208,7 @@ partial class Launcher
     }
     void ChooseRoute(int selected)
     {
+        CloseCameraGuide();
         obsFallback = opened = false;
         route = mode = selected;
         SavePrefs();
@@ -352,6 +355,11 @@ partial class Launcher
         Place(langPl, w - S(40) - S(88), S(20), S(44), S(30));
         Place(langEn, w - S(40) - S(44), S(20), S(44), S(30));
         Place(help, S(40), h - S(43), help.Fit(G), S(34));
+        if (step == 0 || route != 4)
+        {
+            cameraHelp.Label = T("GTA 6 - FPP camera", "GTA 6 - Kamera FPP") + (cameraKeyRegistered ? "  Ctrl+Alt+F" : "");
+            Place(cameraHelp, S(50) + help.Fit(G), h - S(43), cameraHelp.Fit(G), S(34));
+        }
         if (!painting)
         {
             langPl.Invalidate();
@@ -426,7 +434,7 @@ partial class Launcher
         pickPs.Label = "PlayStation 5";
         pickPs.Sub = T("PS Remote Play or chiaki-ng", "PS Remote Play albo chiaki-ng");
         pickHdmi.Label = T("HDMI capture card", "Karta HDMI");
-        pickHdmi.Sub = T("Elgato and other capture cards", "Elgato i inne karty przechwytujące");
+        pickHdmi.Sub = T("Keep the controller on your console", "Pad zostaje podłączony do konsoli");
         Place(pickPs, rx, ry, rw, rh);
         Place(pickXbox, rx, ry + rh, rw, rh);
         Place(pickHdmi, rx, ry + rh * 2, rw, rh);

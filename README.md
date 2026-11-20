@@ -2,13 +2,14 @@
 
 A portable Windows player for smoothing a console stream on your PC. One executable, separate Xbox and PS5 setup walkthroughs in English and Polish, and a built-in motion test. The source app keeps controller input and audio.
 
-[Download the Windows preview](https://github.com/promptowy/naiman/releases/download/v0.2.0-preview.1/NAIMAN.exe) · [English guide](https://promptowy.github.io/naiman/) · [Polski poradnik](https://promptowy.github.io/naiman/pl.html) · [Test results](docs/testing.md)
+[Download the Windows preview](https://github.com/promptowy/naiman/releases/download/v0.3.1-preview.1/NAIMAN.exe) · [English guide](https://promptowy.github.io/naiman/) · [Polski poradnik](https://promptowy.github.io/naiman/pl.html) · [Test results](docs/testing.md)
 
 ## Use
 
 1. Run NAIMAN.exe on Windows 11 x64 with an SDR monitor and a Direct3D 11 feature level 11.0 GPU.
 2. Choose Xbox or PlayStation 5. Follow the instructions on the console, open the stream on your PC, and confirm the game window. If the stream is already running, use "Go straight to the game window" on the first screen: you get the open windows with a live preview. For an HDMI card, pick the card directly or fall back to an OBS projector. Console mode uses a centered 16:9 viewport from the client area. Press F11 in Edge to remove any visible browser chrome.
 3. Use Ctrl + Alt + B to compare original and smoothed playback. Ctrl + Alt + Q exits playback. In the launcher you can also try the 30 Hz motion test without a console.
+4. Select **GTA 6 - FPP camera** for the camera trick. The guide stays on the PC screen while you follow the steps with the controller connected to your console. The HDMI route shows both controller layouts. During a session, Ctrl + Alt + F shows or hides the guide when the shortcut is available. The camera trick can change with game updates.
 
 The preview uses Windows Graphics Capture and Direct3D 11. It detects repeated frames, estimates motion with a coarse-to-fine GPU block search, draws an intermediate frame, and fits the result to the source monitor. Protected content, HDR presentation, direct HDMI device access and native console pairing are outside this preview. Interpolation can add delay and create artifacts. Physical PS5 and capture card validation is pending.
 
