@@ -4,7 +4,7 @@
   const locale = document.documentElement.lang;
   const number = new Intl.NumberFormat(locale);
   const unavailable = locale.startsWith('pl') ? 'brak danych' : 'unavailable';
-  const api = 'https://promptowy.com/naiman-stats.php?public=1';
+  const api = 'https://naiman.192-109-244-184.sslip.io/usage';
   const published = (location.origin === 'https://promptowy.com' && /^\/(en\/)?naiman\/?$/.test(location.pathname)) ||
     (location.origin === 'https://promptowy.github.io' && /^\/naiman\/(index\.html|pl\.html)?$/.test(location.pathname));
 

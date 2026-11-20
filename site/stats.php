@@ -1,5 +1,5 @@
 <?php
-// Install next to wp-load.php. Counters use atomic updates and do not store visitor identifiers.
+// Dedicated NAIMAN endpoint. The SQLite database lives outside the public directory.
 declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
@@ -52,34 +52,23 @@ function downloadsFromGithub(): int {
 }
 
 try {
-    define('SHORTINIT', true);
-    require __DIR__ . '/wp-load.php';
-    $table = $wpdb->options;
-    $delta = $method === 'POST' ? 1 : 0;
-    $write = $wpdb->query($wpdb->prepare("INSERT INTO $table (option_name,option_value,autoload) VALUES
-        ('naiman_stats_views',%d,'no'),('naiman_stats_started',%d,'no'),('naiman_stats_retry',0,'no')
-        ON DUPLICATE KEY UPDATE option_value=IF(option_name='naiman_stats_views',option_value+%d,option_value)",
-        $delta, time(), $delta));
-    if ($write === false) throw new RuntimeException('counter write failed');
-    // Only one request refreshes the shared cache. Errors retain the last successful count.
-    $claim = $wpdb->query($wpdb->prepare("UPDATE $table SET option_value=%d WHERE option_name='naiman_stats_retry'
-        AND CAST(option_value AS UNSIGNED)<=%d", time()+90, time()));
-    if ($claim === 1) {
-        try {
-            $count = downloadsFromGithub();
-            $snapshot = json_encode(['downloads'=>$count, 'checked'=>time()]);
-            $wpdb->query($wpdb->prepare("INSERT INTO $table (option_name,option_value,autoload) VALUES
-                ('naiman_stats_snapshot',%s,'no'),('naiman_stats_retry',%d,'no')
-                ON DUPLICATE KEY UPDATE option_value=VALUES(option_value)", $snapshot, time()+600));
-        } catch (RuntimeException $e) { error_log('NAIMAN download counter: ' . $e->getMessage()); }
+    $db = new PDO('sqlite:/var/lib/naiman-public-stats/usage.sqlite', null, null,
+        [PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);
+    $db->exec('PRAGMA busy_timeout=2500');
+    if ($method === 'POST' && $db->exec('UPDATE usage SET views=views+1 WHERE id=1') !== 1) {
+        throw new RuntimeException('Counter not initialized');
     }
-    $rows = $wpdb->get_results("SELECT option_name,option_value FROM $table WHERE option_name IN
-        ('naiman_stats_views','naiman_stats_started','naiman_stats_snapshot')", ARRAY_A);
-    $data = array_column($rows, 'option_value', 'option_name');
-    if (!isset($data['naiman_stats_views'], $data['naiman_stats_started'])) throw new RuntimeException('counter read failed');
-    $snapshot = json_decode($data['naiman_stats_snapshot'] ?? '', true);
-    echo json_encode(['views'=>(int)$data['naiman_stats_views'], 'started'=>(int)$data['naiman_stats_started'],
-        'downloads'=>$snapshot['downloads'] ?? null, 'checked'=>$snapshot['checked'] ?? null], JSON_THROW_ON_ERROR);
+    $claim = $db->prepare('UPDATE usage SET retry=? WHERE id=1 AND retry<=?');
+    $claim->execute([time()+90,time()]);
+    if ($claim->rowCount() === 1) {
+        try {
+            $total = downloadsFromGithub();
+            $db->prepare('UPDATE usage SET downloads=?,checked=?,retry=? WHERE id=1')->execute([$total,time(),time()+600]);
+        } catch (Throwable $e) { error_log('NAIMAN downloads: ' . $e->getMessage()); }
+    }
+    $row = $db->query('SELECT views,started,downloads,checked FROM usage WHERE id=1')->fetch(PDO::FETCH_ASSOC);
+    if (!$row) throw new RuntimeException('Counter not initialized');
+    echo json_encode($row, JSON_THROW_ON_ERROR);
 } catch (Throwable $e) {
     error_log('NAIMAN stats: ' . $e->getMessage());
     http_response_code(503);
